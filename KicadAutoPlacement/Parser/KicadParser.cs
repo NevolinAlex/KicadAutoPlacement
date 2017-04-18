@@ -72,6 +72,46 @@ namespace KicadAutoPlacement
             }
             text += ")\n";
             return text;
-        } 
+        }
+        public void WriteFromPCB(PCB pcb)
+        {
+            int count = 0;
+            foreach (Node curModule in Tree.Head.Nodes.Where(x => x.Text.Contains("module")))
+            {
+                string rotate = ((pcb.Modules[count].Rotate == 0) ? "" : pcb.Modules[count].Rotate.ToString());
+                int padCount = 0;
+                if (curModule.Text.Split(' ').ToList()[1] == (pcb.Modules[count].Name))
+                {
+                    foreach(Node character in curModule.Nodes)
+                    {
+
+                        List<string> values = character.Text.Split(' ').ToList();
+                        switch (values[0])
+                        {
+                            case "at":
+                                character.Text =String.Format("at {0} {1}",
+                                    pcb.Modules[count].Position.ToString(),
+                                    rotate);
+                                break;
+                            case "fp_text":
+                                List<string> textPos = character.Nodes[0].Text.Split(' ').ToList();
+                                character.Nodes[0].Text = String.Format("at {0} {1} {2}",
+                                    textPos[1],
+                                    textPos[2],
+                                    rotate);
+                                break;
+                            case "pad":
+                                character.Nodes[0].Text = String.Format("at {0} {1}",
+                                    pcb.Modules[count].Pads[padCount].Position.ToString(),
+                                     rotate);
+                                padCount++;
+                                break;
+                        }
+                    }
+                    
+                }
+                count++;
+            }
+        }
     }
 }

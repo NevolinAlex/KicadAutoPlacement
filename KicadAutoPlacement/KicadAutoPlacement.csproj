@@ -50,7 +50,7 @@
     <Compile Include="PrintedCircuitBoard\Module.cs" />
     <Compile Include="PrintedCircuitBoard\Pad.cs" />
     <Compile Include="PrintedCircuitBoard\PCB.cs" />
-    <Compile Include="PrintedCircuitBoard\Position.cs" />
+    <Compile Include="PrintedCircuitBoard\Pair.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
