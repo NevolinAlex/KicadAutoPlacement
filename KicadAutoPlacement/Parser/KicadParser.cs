@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using KicadAutoPlacement.GenAlgorithm;
 
 namespace KicadAutoPlacement
 {
     class KicadParser
     {
         public KicadTree Tree;
-        public KicadParser(string fileName)
+        public readonly string DirectoryPath;
+        public KicadParser(string filePath)
         {
-            using (StreamReader sr = new StreamReader(fileName))
+            string fullFilePath = Path.GetFullPath(filePath);
+            DirectoryPath = Path.GetDirectoryName(fullFilePath);
+            using (StreamReader sr = new StreamReader(fullFilePath))
             {
+
                 Tree = new KicadTree();
                 Tree.Head = Parse(sr, Tree.Head).Nodes[0];
                 Tree.Head.prevNode = null;
@@ -57,7 +63,7 @@ namespace KicadAutoPlacement
         public void WriteFile(string fileName, Node head)
         {
             string fileText = "";
-            using (StreamWriter file = new StreamWriter(fileName,false))
+            using (StreamWriter file = new StreamWriter(DirectoryPath+"\\"+ fileName,false))
             {
                 fileText = Writing(fileText, head);
                 file.WriteLine(fileText);
@@ -73,7 +79,7 @@ namespace KicadAutoPlacement
             text += ")\n";
             return text;
         }
-        public void WriteFromPCB(PCB pcb)
+        public void UpdateTreeFromPcb(PrintedCircuitBoard pcb)
         {
             int count = 0;
             foreach (Node curModule in Tree.Head.Nodes.Where(x => x.Text.Contains("module")))
@@ -101,8 +107,10 @@ namespace KicadAutoPlacement
                                     rotate);
                                 break;
                             case "pad":
-                                character.Nodes[0].Text = String.Format("at {0} {1}",
-                                    pcb.Modules[count].Pads[padCount].Position.ToString(),
+                                List<string> splitText = character.Nodes[0].Text.Split(' ').ToList();
+                                character.Nodes[0].Text = String.Format("at {0} {1} {2}",
+                                    splitText[1],
+                                    splitText[2],
                                      rotate);
                                 padCount++;
                                 break;
@@ -112,6 +120,100 @@ namespace KicadAutoPlacement
                 }
                 count++;
             }
+        }
+
+        public PrintedCircuitBoard MakePcBoardFromTree()
+        {
+            PrintedCircuitBoard pcBoard = new PrintedCircuitBoard();
+            pcBoard.Modules = new List<Module>();
+            pcBoard.NetList = new List<Net>();
+            foreach (Node curModule in Tree.Head.Nodes.Where(x => x.Text.Contains("module")))
+            {
+                Point min = new Point(double.MaxValue, double.MaxValue);
+                Point max = new Point(double.MinValue, double.MinValue);
+                Module module = new Module(curModule.Text.Split(' ')[1]);
+                foreach (Node character in curModule.Nodes)
+                {
+                    List<string> values = character.Text.Split(' ').ToList();
+                    switch (values[0])
+                    {
+                        case "path":
+                            module.Path = values[1];
+                            break;
+                        case "at":
+                            List<double> position = GetCoordinates(new List<Node> { character });
+                            module.Position.X = position[0];
+                            module.Position.Y = position[1];
+                            module.Rotate = (position.Count == 3) ? position[2] : 0;
+                            break;
+                        case "fp_line":
+                            List<double> list = GetCoordinates(character.Nodes.Take(2).ToList());
+                            min = GetMin(GetMin(min, list[0], list[1]), list[2], list[3]);
+                            max = GetMax(GetMax(max, list[0], list[1]), list[2], list[3]);
+                            break;
+                        case "fp_circle":
+                            break;
+                        case "pad":
+                            Pad pad = new Pad();
+                            pad.Number = int.Parse(values[1]);
+                            List<double> pos = GetCoordinates(character.Nodes.Where(x => x.Text.Contains("at")).ToList());
+                            pad.Position.X = pos[0];
+                            pad.Position.Y = pos[1];
+                            List<double> size = GetCoordinates(character.Nodes.Where(x => x.Text.Contains("size")).ToList());
+                            List<string> curNet = character.Nodes.Where(x => x.Text.Contains("net")).SelectMany(x => x.Text.Split(' ')).ToList();
+                            Net net = null;
+                            foreach (var edge in pcBoard.NetList)
+                            {
+                                if (edge.Number == int.Parse(curNet[1]) && edge.Name == curNet[2])
+                                    net = edge;
+                            }
+                            if (net == null)
+                            {
+                                
+                                pad.Net = new Net(curNet[2], int.Parse(curNet[1]));
+                                pad.Net.Pad1 = pad;
+                                pad.Net.Pads.Add(pad);
+                                pcBoard.NetList.Add(pad.Net);
+                            }
+                            else
+                            {
+                                pad.Net = net;
+                                pad.Net.Pad2 = pad;
+                                pad.Net.Pads.Add(pad);
+                            }
+                            pad.Module = module;
+                            min = GetMin(min, pos[0] - size[0] / 2, pos[1] - size[1] / 2);
+                            max = GetMax(max, pos[0] + size[0] / 2, pos[1] + size[1] / 2);
+                            module.Pads.Add(pad);
+                            break;
+                    }
+                }
+                module.LeftUpperBound = min;
+                module.RighLowerBound = max;
+
+                var temp = module.Rotate;
+                Chromosome.RotateModule(module, module.Rotate);
+                module.Rotate = temp;
+                pcBoard.Modules.Add(module);
+            }
+            return pcBoard;
+        }
+        public static Point GetMin(Point point, double X, double Y)
+        {
+            return new Point((X < point.X) ? X : point.X, (Y < point.Y) ? Y : point.Y);
+        }
+        public static Point GetMax(Point point, double X, double Y)
+        {
+            return new Point((X > point.X) ? X : point.X, (Y > point.Y) ? Y : point.Y);
+        }
+        private List<double> GetCoordinates(List<Node> list)
+        {
+            double value = 0;
+            return list
+                .SelectMany(x => x.Text.Split(' '))
+                .Where(x => double.TryParse(x, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+                .Select(x => value)
+                .ToList();
         }
     }
 }

@@ -6,20 +6,20 @@ using System.Threading.Tasks;
 
 namespace KicadAutoPlacement
 {
-    class Pad
+    public class Pad
     {
-        public Pair Position { get; set; }
-        public Edge Net { get; set; }
-        public Module Module { get; set; }
-        public int Number { get; set; }
+        public Point Position { get; set; }//
+        public Net Net { get; set; }
+        public Module Module { get; set; }//
+        public int Number { get; set; }//
 
-        public Pad(Pair position, Edge net)
+        public Pad(Point position, Net net)
         {
             Position = position;
             Net = net;
         }
         public Pad() {
-            Position = new Pair(0, 0);
+            Position = new Point(0, 0);
         }
         public override string ToString()
         {

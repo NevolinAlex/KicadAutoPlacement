@@ -6,20 +6,28 @@ using System.Threading.Tasks;
 
 namespace KicadAutoPlacement
 {
-    class Module
+    public class Module
     {
-        public string Name { get; set; }
+        public string Name { get; set; }//
         public List<Pad> Pads;
-        public Pair LeftUpperBorder { get; set; }
-        public Pair RightLowerBorder { get; set; }
-        public Pair Position { get; set; }
-        public double Rotate { get; set; }
-        public string Path { get; set; }
+        public Point LeftUpperBound { get; set; }//
+        public Point RighLowerBound { get; set; }//
+        public Point Position { get; set; }//
+        private double _rotate;
+        public double Rotate
+        {
+            get { return _rotate; }
+            set { _rotate = value % 360; }
+        } //
+
+        public string Path { get; set; }//
         public Module(string name)
         {
             Name = name;
-            Position = new Pair(0, 0);
+            Position = new Point(0, 0);
             Rotate = 0;
+            LeftUpperBound = new Point(0,0);
+            RighLowerBound = new Point(0,0);
             Pads = new List<Pad>();
         }
         public override string ToString()
