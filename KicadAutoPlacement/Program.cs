@@ -10,15 +10,16 @@ namespace KicadAutoPlacement
     {
         static void Main(string[] args)
         {
-            KicadParser parser = new KicadParser("C:\\Users\\disap\\Desktop\\Diplom\\PrintedCircuitBoards\\Kicad_Projects\\kicad\\kicad.kicad_pcb");
-            PrintedCircuitBoard pcb = parser.MakePcBoardFromTree();
-            Chromosome.ExamplePrintedCircuitBoard = pcb;
-            Chromosome.LeftUpperPoint = new Point(50,50);
-            Chromosome.WorkspaceHeight = 100;
-            Chromosome.WorkspaceWidth = 100;
+
+            Chromosome.LeftUpperPoint = new Point(20,20);
+            Chromosome.WorkspaceHeight = 50;
+            Chromosome.WorkspaceWidth = 50;
             GeneticAlgorithm.PoolSize = 100;
             GeneticAlgorithm.MaxChromosomeAge = 5;
             GeneticAlgorithm.SelectionCount = 60;
+            KicadParser parser = new KicadParser("C:\\Users\\disap\\Desktop\\Diplom\\PrintedCircuitBoards\\Kicad_Projects\\kicad\\kicad.kicad_pcb");
+            PrintedCircuitBoard pcb = parser.MakePcBoardFromTree();
+            Chromosome.ExamplePrintedCircuitBoard = pcb;
             GeneticAlgorithm genAlgorithm = new GeneticAlgorithm();
             genAlgorithm.Start();
             Chromosome bestChromosome = genAlgorithm.GetBestChromosome();

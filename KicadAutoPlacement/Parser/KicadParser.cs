@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using KicadAutoPlacement.GenAlgorithm;
+using KicadAutoPlacement.Solvers;
 
 namespace KicadAutoPlacement
 {
@@ -148,8 +149,8 @@ namespace KicadAutoPlacement
                             break;
                         case "fp_line":
                             List<double> list = GetCoordinates(character.Nodes.Take(2).ToList());
-                            min = GetMin(GetMin(min, list[0], list[1]), list[2], list[3]);
-                            max = GetMax(GetMax(max, list[0], list[1]), list[2], list[3]);
+                            min = GeometricSolver.GetMin(GeometricSolver.GetMin(min, list[0], list[1]), list[2], list[3]);
+                            max = GeometricSolver.GetMax(GeometricSolver.GetMax(max, list[0], list[1]), list[2], list[3]);
                             break;
                         case "fp_circle":
                             break;
@@ -182,8 +183,8 @@ namespace KicadAutoPlacement
                                 pad.Net.Pads.Add(pad);
                             }
                             pad.Module = module;
-                            min = GetMin(min, pos[0] - size[0] / 2, pos[1] - size[1] / 2);
-                            max = GetMax(max, pos[0] + size[0] / 2, pos[1] + size[1] / 2);
+                            min = GeometricSolver.GetMin(min, pos[0] - size[0] / 2, pos[1] - size[1] / 2);
+                            max = GeometricSolver.GetMax(max, pos[0] + size[0] / 2, pos[1] + size[1] / 2);
                             module.Pads.Add(pad);
                             break;
                     }
@@ -198,14 +199,7 @@ namespace KicadAutoPlacement
             }
             return pcBoard;
         }
-        public static Point GetMin(Point point, double X, double Y)
-        {
-            return new Point((X < point.X) ? X : point.X, (Y < point.Y) ? Y : point.Y);
-        }
-        public static Point GetMax(Point point, double X, double Y)
-        {
-            return new Point((X > point.X) ? X : point.X, (Y > point.Y) ? Y : point.Y);
-        }
+
         private List<double> GetCoordinates(List<Node> list)
         {
             double value = 0;

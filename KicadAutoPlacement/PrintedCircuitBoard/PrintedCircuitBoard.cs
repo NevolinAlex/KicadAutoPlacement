@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using KicadAutoPlacement.Solvers;
 
 namespace KicadAutoPlacement
 {
@@ -12,11 +13,14 @@ namespace KicadAutoPlacement
     {
         public List<Module> Modules; // list of elements
         public List<Net> NetList; // list of nets
-        private double DistanceBetweenModules { get; set; } = 5;
+        public static double DistanceBetweenModules { get; set; } = 5;
+        public PrintedCircuitBoard(){}
         /// <summary>
         /// Конструктор копирующий конфигурацию платы 
         /// </summary>
         /// <param name="printedCircuitBoard"></param>
+
+
         public PrintedCircuitBoard(PrintedCircuitBoard printedCircuitBoard)
         {
             Modules = new List<Module>();
@@ -60,7 +64,6 @@ namespace KicadAutoPlacement
             }
             // TODO:make a clone PrintedCircuitBoard from another PrintedCircuitBoard : Solved
         }
-        public PrintedCircuitBoard() {}
         /// <summary>
         /// Подсчет всех пересечений в данной конфигурации платы
         /// </summary>
@@ -75,7 +78,7 @@ namespace KicadAutoPlacement
 
                 for (int j = i + 1; j < netlist.Count; j++)
                 {
-                    if (PrintedCircuitBoard.AreSegmentsIntersect(netlist[i].Item1, netlist[i].Item2, netlist[j].Item1,
+                    if (GeometricSolver.AreSegmentsIntersect(netlist[i].Item1, netlist[i].Item2, netlist[j].Item1,
                         netlist[j].Item2))
                         intersectionCount++;
                 }
@@ -132,7 +135,7 @@ namespace KicadAutoPlacement
                 for (int j = i+1; j < net.Pads.Count; j++)
                 {
                     Point p2 = new Point(net.Pads[j].Position + net.Pads[j].Module.Position);
-                    curDistance = GetDistance(p1, p2);
+                    curDistance = GeometricSolver.GetDistance(p1, p2);
                     if (curDistance < minDistance && !list.Contains(new Tuple<Point, Point>(p1, p2)))
                     {
                         curPoint = p2;
@@ -145,18 +148,9 @@ namespace KicadAutoPlacement
             }
             return list;
         }
+
         /// <summary>
-        /// Возвращает расстояние между двумя точками
-        /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static double GetDistance(Point p1, Point p2)
-        {
-            return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
-        }
-        /// <summary>
-        /// Рекурсивный метод, уибрает пересечения элементов на печатной плате
+        /// Рекурсивный метод, приводит плату к корректному виду без пересечений модулей
         /// </summary>
         /// <param name="modulesForCheck"> Список модулей которые нужно проверить на пересечение</param>
         public void LeadToCorrectForm(List<Module> modulesForCheck)
@@ -246,33 +240,7 @@ namespace KicadAutoPlacement
                     break;
             }
         }
-        /// <summary>
-        /// Проверка на пересечение двух отрезков на плоскости
-        /// </summary>
-        /// <param name="a1"></param>
-        /// <param name="a2"></param>
-        /// <param name="b1"></param>
-        /// <param name="b2"></param>
-        /// <returns></returns>
-        public static bool AreSegmentsIntersect(Point a1, Point a2, Point b1, Point b2)
-        {
-            double eps = 0.000001;
-            double d= (a1.X - a2.X) * (b2.Y - b1.Y) - (a1.Y - a2.Y) * (b2.X - b1.X);
-            double da= (a1.X - b1.X) * (b2.Y - b1.Y) - (a1.Y - b1.Y) * (b2.X - b1.X);
-            double db= (a1.X - a2.X) * (a1.Y - b1.Y) - (a1.Y - a2.Y) * (a1.X - b1.X);
 
-            if (Math.Abs(d) < eps)
-                return false;
-            else
-            {
-                double ta= da / d;
-                double tb= db / d;
-                if ((0 <= ta) && (ta <= 1.000001) && (0 <= tb) && (tb <= 1.000001))
-                    return true;
-                return false;
-            }
-
-        }
 
     }
 }
