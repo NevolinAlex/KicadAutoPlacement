@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KicadAutoPlacement
 {
-    public class Module
+    public class Module: IEquatable<Module>
     {
         public string Name { get; set; }//
         public List<Pad> Pads;
@@ -35,5 +35,31 @@ namespace KicadAutoPlacement
             return Name;
         }
 
+        public bool Equals(Module other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return _rotate.Equals(other._rotate) && string.Equals(Name, other.Name) && Equals(Position, other.Position) && string.Equals(Path, other.Path);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Module) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = _rotate.GetHashCode();
+                hashCode = (hashCode * 397) ^ (Name != null ? Name.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Position != null ? Position.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Path != null ? Path.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
     }
 }

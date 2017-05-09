@@ -13,14 +13,13 @@ namespace KicadAutoPlacement
     {
         public List<Module> Modules; // list of elements
         public List<Net> NetList; // list of nets
-        public static double DistanceBetweenModules { get; set; } = 5;
+        public static double DistanceBetweenModules { get; set; } = 1.5;
         public PrintedCircuitBoard(){}
+
         /// <summary>
         /// Конструктор копирующий конфигурацию платы 
         /// </summary>
         /// <param name="printedCircuitBoard"></param>
-
-
         public PrintedCircuitBoard(PrintedCircuitBoard printedCircuitBoard)
         {
             Modules = new List<Module>();
@@ -64,6 +63,7 @@ namespace KicadAutoPlacement
             }
             // TODO:make a clone PrintedCircuitBoard from another PrintedCircuitBoard : Solved
         }
+
         /// <summary>
         /// Подсчет всех пересечений в данной конфигурации платы
         /// </summary>
@@ -111,67 +111,129 @@ namespace KicadAutoPlacement
         /// <returns></returns>
         public List<Tuple<Point, Point>> GetAllNets(PrintedCircuitBoard pcb)
         {
-            List < Tuple < Point,Point >> lst = new List<Tuple<Point, Point>>();
+            List <Tuple<Point,Point>> lst = new List<Tuple<Point, Point>>();
             foreach (var net in pcb.NetList)
             {
-                lst.AddRange(GetPointListFromNet(net));
+                if (net.Pads.Count > 1)
+                    lst.AddRange(GetSegmentListFromNet(net));
             }
             return lst;
         }
         /// <summary>
-        /// Возвращает список пар точек(отрезков/соединений) которые принадлежат названию соединения
+        /// Возвращает список пар точек(отрезков/соединений) которые принадлежат переданному соединению
         /// </summary>
         /// <param name="net"></param>
         /// <returns></returns>
-        private List<Tuple<Point,Point>> GetPointListFromNet(Net net)
+        private List<Tuple<Point,Point>> GetSegmentListFromNet(Net net)
         {
             List<Tuple<Point, Point>> list = new List<Tuple<Point, Point>>();
-            double curDistance;
-            Point curPoint = null;
-            for (int i = 0; i < net.Pads.Count; i++)
+            var notVisited = net.Pads.ToList();
+            Pad nextPad = notVisited[0];
+            while (true)
             {
-                double minDistance = double.MaxValue;
-                Point p1 = new Point(net.Pads[i].Position + net.Pads[i].Module.Position);
-                for (int j = i+1; j < net.Pads.Count; j++)
+                notVisited.Remove(nextPad);
+                Point curPoint = new Point(nextPad.Position + nextPad.Module.Position);
+                var minDistance = double.MaxValue;
+                foreach (var e in notVisited)
                 {
-                    Point p2 = new Point(net.Pads[j].Position + net.Pads[j].Module.Position);
-                    curDistance = GeometricSolver.GetDistance(p1, p2);
-                    if (curDistance < minDistance && !list.Contains(new Tuple<Point, Point>(p1, p2)))
+                    Point ePoint = new Point(e.Position + e.Module.Position);
+                    var curDistance = GeometricSolver.GetDistance(curPoint, ePoint);
+                    if (GeometricSolver.GetDistance(curPoint, ePoint) < minDistance)
                     {
-                        curPoint = p2;
                         minDistance = curDistance;
+                        nextPad = e;
                     }
-
                 }
-                if (minDistance != double.MaxValue)
-                    list.Add(new Tuple<Point, Point>(p1, curPoint));
+                if (notVisited.Count == 0)
+                {
+                    list.Add(new Tuple<Point, Point>(new Point(curPoint),new Point(list[0].Item1) ));
+                    list = list.OrderBy(x => GeometricSolver.GetDistance(x.Item1, x.Item2))
+                        .Take(list.Count - 1)
+                        .ToList();
+                    break;
+                }
+                list.Add(new Tuple<Point, Point>(new Point(curPoint), new Point(nextPad.Position + nextPad.Module.Position) ));
+
             }
+
+            #region comments
+            //Point curPoint = null;
+            //for (int i = 0; i < net.Pads.Count; i++)
+            //{
+            //    double minDistance = double.MaxValue;
+            //    Point p1 = new Point(net.Pads[i].Position + net.Pads[i].Module.Position);
+            //    for (int j = i+1; j < net.Pads.Count; j++)
+            //    {
+            //        Point p2 = new Point(net.Pads[j].Position + net.Pads[j].Module.Position);
+            //        curDistance = GeometricSolver.GetDistance(p1, p2);
+            //        if (curDistance < minDistance && !list.Contains(new Tuple<Point, Point>(p1, p2)))
+            //        {
+            //            curPoint = p2;
+            //            minDistance = curDistance;
+            //        }
+
+            //    }
+            //    if (minDistance != double.MaxValue)
+            //        list.Add(new Tuple<Point, Point>(p1, curPoint));
+            //}
+
+
+            #endregion
+
             return list;
         }
 
         /// <summary>
         /// Рекурсивный метод, приводит плату к корректному виду без пересечений модулей
         /// </summary>
-        /// <param name="modulesForCheck"> Список модулей которые нужно проверить на пересечение</param>
-        public void LeadToCorrectForm(List<Module> modulesForCheck)
+        /// <param name="notVisited"> Список модулей которые нужно проверить на пересечение</param>
+        public void LeadToCorrectForm(List<Module> modules)
         {
-            List<Module> newModulesForCheck = new List<Module>();
-            foreach (var curModule in modulesForCheck)
+            var notVisited = modules.ToList();
+            foreach (var e in notVisited)
             {
-                foreach (var mod in Modules)
+                if (!Modules.Contains(e))
+                    throw new Exception("Invalid arguments for lead to correct form");
+            }
+
+            while (true)
+            {
+                if (notVisited.Count == 0)
+                    break;
+                var curModule = notVisited[notVisited.Count - 1];
+                notVisited.Remove(curModule);
+                foreach (var module in Modules)
                 {
-                    if (mod == curModule)
+                    if (curModule.Equals(module))
                         continue;
-                    if (AreModulesIntersect(curModule, mod))
+                    if (AreModulesIntersect(curModule, module))
                     {
-                        newModulesForCheck.Add(mod);
-                        DivideModules(curModule, mod);
+                        DivideModules(curModule,module);
+                        if (!notVisited.Contains(module))
+                            notVisited.Add(module);
                     }
                 }
             }
-            if (newModulesForCheck.Count!=0)
-                LeadToCorrectForm(newModulesForCheck);
+            //List<Module> newModulesForCheck = new List<Module>();
+            //foreach (var curModule in notVisited)
+            //{
+            //    foreach (var mod in Modules)
+            //    {
+            //        if (mod.Position == curModule.Position && mod.Name == curModule.Name && mod.Path == curModule.Path)
+            //        {
+            //            continue;
+            //        }
+            //        if (AreModulesIntersect(curModule, mod))
+            //        {
+            //            newModulesForCheck.Add(mod);
+            //            DivideModules(curModule, mod);
+            //        }
+            //    }
+            //}
+            //if (newModulesForCheck.Count!=0)
+            //    LeadToCorrectForm(newModulesForCheck);
         }
+
         /// <summary>
         /// Проверка на пересечение двух модулей на плоскости
         /// </summary>

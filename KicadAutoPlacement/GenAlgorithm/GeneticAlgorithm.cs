@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace KicadAutoPlacement.GenAlgorithm
 {
-    public class GeneticAlgorithm
+    public class GeneticAlgorithm 
     {
         /// <summary>
         /// Максимальное время жизни хромосомы в пуле
@@ -21,7 +22,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         /// <summary>
         /// Число лучших хромосом выживающих после селекции
         /// </summary>
-        public static int SelectionCount = 60;
+        public static int SelectionCount = 80;
 
         public int IterationCount { get; set; }
         private List<Chromosome> Pool;
@@ -31,29 +32,44 @@ namespace KicadAutoPlacement.GenAlgorithm
             IterationCount = 0;
             Pool = new List<Chromosome>(PoolSize);
             Buffer = new List<Chromosome>();
+            Buffer.Add(new Chromosome());
             GenerateNewChromosomes(PoolSize);
         }
         public void Start()
         {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             while (Console.KeyAvailable == false)
             {
-                MakeIteartion();
+                MakeIteartion(stopWatch);
             }
+            stopWatch.Stop();
         }
 
         public Chromosome GetBestChromosome()
         {
             return Buffer[Buffer.Count - 1];
         }
-        private void MakeIteartion()
+        private void MakeIteartion(Stopwatch stopWatch)
         {
             IterationCount++;
             GetOld();
+            //Console.WriteLine("Итерация: " + IterationCount);
             Mutate();
+            //Console.WriteLine("Время мутации: " + (double)stopwatch.Elapsed.Milliseconds/1000);
+
             Crossing();
-            GetEvaluation();
+            //Console.WriteLine("Время скрещивания: " + (double)stopwatch.ElapsedMilliseconds/1000);
+
+            GetEvaluation(stopWatch);
+            //Console.WriteLine("Время оценки: " + (double)stopwatch.ElapsedMilliseconds / 1000);
+
             MakeSelection();
+            //Console.WriteLine("Время селекции: " + (double)stopwatch.ElapsedMilliseconds / 1000);
+
             GenerateNewChromosomes(PoolSize - Pool.Count());
+           // Console.WriteLine("Время генерации новых хромосом: " + (double)stopwatch.ElapsedMilliseconds / 1000);
+           // Console.WriteLine(String.Format("Number of intersection: {0}\n--------------------------------------", Buffer[0].Valuation));
         }
 
         private void GetOld()
@@ -81,7 +97,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         {
             for (int i = 0; i < PoolSize; i++)
             {
-                Pool.AddRange(Pool[i].Mutate());
+                Pool.AddRange( Pool[i].Mutate());
             }
         }
 
@@ -93,9 +109,9 @@ namespace KicadAutoPlacement.GenAlgorithm
             }
         }
 
-        private void GetEvaluation()
+        private void GetEvaluation(Stopwatch stopWatch)
         {
-            Chromosome bestPoolChromosome = new Chromosome();
+            GenAlgorithm.Chromosome bestPoolChromosome = new GenAlgorithm.Chromosome();
             foreach (var chromosome in Pool)
             {
                 chromosome.CalculateValuation();
@@ -113,10 +129,11 @@ namespace KicadAutoPlacement.GenAlgorithm
             }
             if (bestPoolChromosome.Valuation < bestBufferValuation)
             {
-                Console.WriteLine(String.Format("Itertion: {0} \n Number of intersection: {1}",IterationCount, bestPoolChromosome.Valuation));
-                Buffer.Add(new Chromosome(bestPoolChromosome));
+                Console.WriteLine(String.Format("Itertion: {0} \n Number of intersection: {1}\n Elapsed Time: {2}",IterationCount, bestPoolChromosome.Valuation, stopWatch.ElapsedMilliseconds/1000));
+                Buffer[0] = new Chromosome(bestPoolChromosome);
             }
 
         }
     }
+
 }

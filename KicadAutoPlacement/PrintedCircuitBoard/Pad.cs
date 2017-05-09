@@ -10,6 +10,7 @@ namespace KicadAutoPlacement
     {
         public Point Position { get; set; }//
         public Net Net { get; set; }
+        public string Name { get; set; }
         public Module Module { get; set; }//
         public int Number { get; set; }//
 

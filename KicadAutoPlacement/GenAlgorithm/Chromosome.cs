@@ -10,12 +10,12 @@ namespace KicadAutoPlacement.GenAlgorithm
     public class Chromosome
     {
         public static PrintedCircuitBoard ExamplePrintedCircuitBoard = null;
-        public static double WorkspaceWidth = 50;
-        public static double WorkspaceHeight = 50;
-        public static Point LeftUpperPoint = new Point(0,0);
+        public static double WorkspaceWidth;
+        public static double WorkspaceHeight;
+        public static Point LeftUpperPoint;
         public PrintedCircuitBoard PrintCircuitBoard;
         public int Age { get; set; }
-        public int Valuation { get; private set; }// { get { return CalculateValuation(); } }
+        public int Valuation { get; set; }// { get { return CalculateValuation(); } }
         public static int Angle = 90;
 
         /// <summary>
@@ -25,11 +25,15 @@ namespace KicadAutoPlacement.GenAlgorithm
         {
             Age = 0;
             Valuation = int.MaxValue;
+            var rnd = new Random();
             PrintCircuitBoard = new PrintedCircuitBoard(ExamplePrintedCircuitBoard);
             foreach (var module in PrintCircuitBoard.Modules)
             {
                 module.Position = GeometricSolver.GetRandomPointInRange(WorkspaceWidth, WorkspaceHeight) + LeftUpperPoint;
+                var angle = (rnd.Next(4)) * Angle;
+                RotateModule(module, angle);
             }
+            PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
         }
 
         /// <summary>
@@ -39,7 +43,15 @@ namespace KicadAutoPlacement.GenAlgorithm
         public Chromosome(Chromosome chromosome)
         {
             PrintCircuitBoard = new PrintedCircuitBoard(chromosome.PrintCircuitBoard);
-            PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
+            try
+            {
+                PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("exception create");
+            }
+
             Age = chromosome.Age;
             Valuation = chromosome.Valuation;
         }
@@ -61,6 +73,7 @@ namespace KicadAutoPlacement.GenAlgorithm
             return Valuation;
         }
 
+
         /// <summary>
         /// Смена позиций одного элемента из одной конфигурации в другую
         /// </summary>
@@ -77,8 +90,10 @@ namespace KicadAutoPlacement.GenAlgorithm
             printedCircuitBoard1.Modules[elementForCross].Position =
                 printedCircuitBoard2.Modules[elementForCross].Position;
             printedCircuitBoard2.Modules[elementForCross].Position = temp;
-            printedCircuitBoard1.LeadToCorrectForm(new List<Module>() {printedCircuitBoard1.Modules[elementForCross]});
+
+            printedCircuitBoard1.LeadToCorrectForm(new List<Module>() { printedCircuitBoard1.Modules[elementForCross] });
             printedCircuitBoard2.LeadToCorrectForm(new List<Module>() { printedCircuitBoard2.Modules[elementForCross] });
+
             return new List<Chromosome>() {new Chromosome(printedCircuitBoard1), new Chromosome(printedCircuitBoard2)};
         }
 
@@ -93,9 +108,18 @@ namespace KicadAutoPlacement.GenAlgorithm
             PrintedCircuitBoard rotatedPcb = new PrintedCircuitBoard(this.PrintCircuitBoard);
             Random rnd = new Random();
             int mutateNumber = rnd.Next(rotatedPcb.Modules.Count);
-            var angle = rnd.Next(4) * Angle;
+            var angle = (rnd.Next(3)+1) * Angle;
             RotateModule(rotatedPcb.Modules[mutateNumber], angle);
-            rotatedPcb.LeadToCorrectForm(new List<Module>() { rotatedPcb.Modules[mutateNumber]}); 
+            try
+            {
+                rotatedPcb.LeadToCorrectForm(new List<Module>() { rotatedPcb.Modules[mutateNumber] });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("exception rotate");
+
+            }
+
 
             //todo: Смена двух элементов местами: need Refactor
             PrintedCircuitBoard swappedPcb = new PrintedCircuitBoard(this.PrintCircuitBoard);
@@ -135,7 +159,16 @@ namespace KicadAutoPlacement.GenAlgorithm
             var temp = modulesToSwap[0].Position;
             modulesToSwap[0].Position = modulesToSwap[1].Position;
             modulesToSwap[1].Position = temp;
-            pcb.LeadToCorrectForm(new List<Module>() {modulesToSwap[0], modulesToSwap[1]});
+            try
+            {
+                pcb.LeadToCorrectForm(new List<Module>() { modulesToSwap[0], modulesToSwap[1] });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("exception swap");
+
+            }
+
             //return pcb;
         }
     }

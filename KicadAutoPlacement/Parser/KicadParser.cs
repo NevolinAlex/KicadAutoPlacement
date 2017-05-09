@@ -30,6 +30,7 @@ namespace KicadAutoPlacement
 
         private Node Parse(StreamReader sr, Node curNode)
         {
+            bool flag = true;
             while (!sr.EndOfStream)
             {
                 char curSymbol = (char)sr.Read();
@@ -37,9 +38,11 @@ namespace KicadAutoPlacement
                 switch (curSymbol)
                 {
                     case '(':
+                        flag = true;
                         curNode.Nodes.Add(Parse(sr,new Node(curNode)));
                         break;
                     case ')':
+                        flag = false;
                         return curNode;
                     case '\n':
                         break;
@@ -54,7 +57,8 @@ namespace KicadAutoPlacement
                         curNode.Text += curSymbol;
                         break;
                     default:
-                        curNode.Text += curSymbol;
+                        if (flag)
+                            curNode.Text += curSymbol;
                         break;
                 }
             }
@@ -72,6 +76,7 @@ namespace KicadAutoPlacement
         }
         private string Writing(string text, Node curNode)
         {
+            curNode.Text = curNode.Text.Replace("hide", "");
             text += '(' + curNode.Text;
             foreach(Node node in curNode.Nodes)
             {
@@ -156,31 +161,40 @@ namespace KicadAutoPlacement
                             break;
                         case "pad":
                             Pad pad = new Pad();
-                            pad.Number = int.Parse(values[1]);
+                            int n;
+                            if (int.TryParse(values[1], out n))
+                            {
+                                pad.Number = int.Parse(values[1]);
+                            }
+                            else pad.Name = values[1];
+
                             List<double> pos = GetCoordinates(character.Nodes.Where(x => x.Text.Contains("at")).ToList());
                             pad.Position.X = pos[0];
                             pad.Position.Y = pos[1];
                             List<double> size = GetCoordinates(character.Nodes.Where(x => x.Text.Contains("size")).ToList());
                             List<string> curNet = character.Nodes.Where(x => x.Text.Contains("net")).SelectMany(x => x.Text.Split(' ')).ToList();
                             Net net = null;
-                            foreach (var edge in pcBoard.NetList)
+                            if (curNet.Count != 0)
                             {
-                                if (edge.Number == int.Parse(curNet[1]) && edge.Name == curNet[2])
-                                    net = edge;
-                            }
-                            if (net == null)
-                            {
-                                
-                                pad.Net = new Net(curNet[2], int.Parse(curNet[1]));
-                                pad.Net.Pad1 = pad;
-                                pad.Net.Pads.Add(pad);
-                                pcBoard.NetList.Add(pad.Net);
-                            }
-                            else
-                            {
-                                pad.Net = net;
-                                pad.Net.Pad2 = pad;
-                                pad.Net.Pads.Add(pad);
+                                foreach (var edge in pcBoard.NetList)
+                                {
+                                    if (edge.Number == int.Parse(curNet[1]) && edge.Name == curNet[2])
+                                        net = edge;
+                                }
+                                if (net == null)
+                                {
+
+                                    pad.Net = new Net(curNet[2], int.Parse(curNet[1]));
+                                    pad.Net.Pad1 = pad;
+                                    pad.Net.Pads.Add(pad);
+                                    pcBoard.NetList.Add(pad.Net);
+                                }
+                                else
+                                {
+                                    pad.Net = net;
+                                    pad.Net.Pad2 = pad;
+                                    pad.Net.Pads.Add(pad);
+                                }
                             }
                             pad.Module = module;
                             min = GeometricSolver.GetMin(min, pos[0] - size[0] / 2, pos[1] - size[1] / 2);

@@ -3,33 +3,43 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using KicadAutoPlacement.GenAlgorithm;
 namespace KicadAutoPlacement
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
-
-            Chromosome.LeftUpperPoint = new Point(20,20);
-            Chromosome.WorkspaceHeight = 50;
-            Chromosome.WorkspaceWidth = 50;
-            GeneticAlgorithm.PoolSize = 100;
-            GeneticAlgorithm.MaxChromosomeAge = 5;
-            GeneticAlgorithm.SelectionCount = 60;
-            KicadParser parser = new KicadParser("C:\\Users\\disap\\Desktop\\Diplom\\PrintedCircuitBoards\\Kicad_Projects\\kicad\\kicad.kicad_pcb");
+            OpenFileDialog dialog = new OpenFileDialog();
+            string fileName = "";
+            dialog.Filter = "PCB files |*.kicad_pcb;";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                fileName = dialog.FileName;
+            }
+            //KicadParser parser = new KicadParser("C:\\Users\\disap\\Desktop\\Diplom\\PrintedCircuitBoards\\Kicad_Projects\\kicad\\kicad.kicad_pcb");
+            KicadParser parser = new KicadParser(fileName);
             PrintedCircuitBoard pcb = parser.MakePcBoardFromTree();
-            Chromosome.ExamplePrintedCircuitBoard = pcb;
+
+            //Console.WriteLine(pcb.GetIntersectionsNumber()); 
+
+            Chromosome.LeftUpperPoint = new Point(20, 20);// левый верхний угол рабочего пространства
+            Chromosome.WorkspaceHeight = 120; // высота рабочего пространства в котором генерируются новые особи
+            Chromosome.WorkspaceWidth = 120;//ширина рабочего пространства в котором генерируются новые особи
+            GeneticAlgorithm.PoolSize = 100; // размер пула
+            GeneticAlgorithm.MaxChromosomeAge = 100; // максимальный возраст хромосомы
+            GeneticAlgorithm.SelectionCount = 80; //число хромосом переживающих селекцию
+            Chromosome.ExamplePrintedCircuitBoard = pcb; // пример платы по которой будут генерироваться новые особи
             GeneticAlgorithm genAlgorithm = new GeneticAlgorithm();
             genAlgorithm.Start();
+
+
             Chromosome bestChromosome = genAlgorithm.GetBestChromosome();
             parser.UpdateTreeFromPcb(bestChromosome.PrintCircuitBoard);
-            parser.WriteFile("newPcb.kicad_pcb", parser.Tree.Head);
-            //Chromosome.RotateModule(pcb2.Modules[1], 90);
-            //Console.WriteLine(pcb2.GetIntersectionsNumber());
-            //Console.WriteLine(pcb.GetIntersectionsNumber());
-            // Console.WriteLine(PrintedCircuitBoard.AreModulesIntersect(pcb.Modules[1], pcb.Modules[4]));
-            //pcb.LeadToCorrectForm(new List<Module>() {pcb.Modules[1]});
+            parser.WriteFile("out.kicad_pcb", parser.Tree.Head);
+
 
         }
     }
