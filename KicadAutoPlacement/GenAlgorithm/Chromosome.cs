@@ -25,13 +25,17 @@ namespace KicadAutoPlacement.GenAlgorithm
         {
             Age = 0;
             Valuation = int.MaxValue;
-            var rnd = new Random();
             PrintCircuitBoard = new PrintedCircuitBoard(ExamplePrintedCircuitBoard);
+            var rnd = new Random();
             foreach (var module in PrintCircuitBoard.Modules)
             {
-                module.Position = GeometricSolver.GetRandomPointInRange(WorkspaceWidth, WorkspaceHeight) + LeftUpperPoint;
-                var angle = (rnd.Next(4)) * Angle;
-                RotateModule(module, angle);
+                module.Position = GeometricSolver.GetRandomPointInRange(WorkspaceWidth, WorkspaceHeight, rnd) +
+                                  LeftUpperPoint;
+                if (!module.IsLocked())
+                {
+                    var angle = rnd.Next(0, 4) * Angle;
+                    RotateModule(module, angle);
+                }
             }
             PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
         }
@@ -43,15 +47,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         public Chromosome(Chromosome chromosome)
         {
             PrintCircuitBoard = new PrintedCircuitBoard(chromosome.PrintCircuitBoard);
-            try
-            {
-                PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("exception create");
-            }
-
+            PrintCircuitBoard.LeadToCorrectForm(PrintCircuitBoard.Modules);
             Age = chromosome.Age;
             Valuation = chromosome.Valuation;
         }
@@ -107,18 +103,16 @@ namespace KicadAutoPlacement.GenAlgorithm
             //todo: Поворот элемента: need Refactor
             PrintedCircuitBoard rotatedPcb = new PrintedCircuitBoard(this.PrintCircuitBoard);
             Random rnd = new Random();
-            int mutateNumber = rnd.Next(rotatedPcb.Modules.Count);
-            var angle = (rnd.Next(3)+1) * Angle;
-            RotateModule(rotatedPcb.Modules[mutateNumber], angle);
-            try
-            {
-                rotatedPcb.LeadToCorrectForm(new List<Module>() { rotatedPcb.Modules[mutateNumber] });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("exception rotate");
 
+            var angle = (rnd.Next(3)+1) * Angle;
+            int mutateNumber = rnd.Next(rotatedPcb.Modules.Count);
+            while (rotatedPcb.Modules[mutateNumber].IsLocked())
+            {
+                mutateNumber = rnd.Next(rotatedPcb.Modules.Count);
             }
+            RotateModule(rotatedPcb.Modules[mutateNumber], angle);
+            rotatedPcb.LeadToCorrectForm(new List<Module>() { rotatedPcb.Modules[mutateNumber] });
+
 
 
             //todo: Смена двух элементов местами: need Refactor
@@ -155,21 +149,19 @@ namespace KicadAutoPlacement.GenAlgorithm
         public static void SwapModules(PrintedCircuitBoard pcb)
         {
             Random rnd = new Random();
-            var modulesToSwap = pcb.Modules.OrderBy(x => rnd.Next()).Take(2).ToList();
-            var temp = modulesToSwap[0].Position;
-            modulesToSwap[0].Position = modulesToSwap[1].Position;
-            modulesToSwap[1].Position = temp;
-            try
+            var first = rnd.Next(pcb.Modules.Count);
+            var second = rnd.Next(pcb.Modules.Count);
+            while (pcb.Modules[first].IsLocked() || pcb.Modules[second].IsLocked())
             {
-                pcb.LeadToCorrectForm(new List<Module>() { modulesToSwap[0], modulesToSwap[1] });
+                first = rnd.Next(pcb.Modules.Count);
+                second = rnd.Next(pcb.Modules.Count);
             }
-            catch (Exception e)
-            {
-                Console.WriteLine("exception swap");
+            //var modulesToSwap = pcb.Modules.OrderBy(x => rnd.Next()).Take(2).ToList();
+            var temp = new Point(pcb.Modules[first].Position);
+            pcb.Modules[first].Position = pcb.Modules[second].Position;
+            pcb.Modules[second].Position = temp;
 
-            }
-
-            //return pcb;
+            pcb.LeadToCorrectForm(new List<Module>() { pcb.Modules[second], pcb.Modules[first] });
         }
     }
 }

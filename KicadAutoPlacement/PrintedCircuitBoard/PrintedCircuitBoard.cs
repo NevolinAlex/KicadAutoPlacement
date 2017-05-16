@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using KicadAutoPlacement.GenAlgorithm;
 using KicadAutoPlacement.Solvers;
 
 namespace KicadAutoPlacement
@@ -13,7 +14,7 @@ namespace KicadAutoPlacement
     {
         public List<Module> Modules; // list of elements
         public List<Net> NetList; // list of nets
-        public static double DistanceBetweenModules { get; set; } = 1.5;
+        public static double DistanceBetweenModules { get; set; } = 1.2;
         public PrintedCircuitBoard(){}
 
         /// <summary>
@@ -30,6 +31,10 @@ namespace KicadAutoPlacement
                 module.Path = curModule.Path;
                 module.Position = new Point(curModule.Position);
                 module.Rotate = curModule.Rotate;
+                if (curModule.IsLockedX())
+                    module.LockXCoordinate();
+                if (curModule.IsLockedY())
+                    module.LockYCoordinate();
                 module.LeftUpperBound = new Point(curModule.LeftUpperBound);
                 module.RighLowerBound = new Point(curModule.RighLowerBound);
                 foreach (var curPad in curModule.Pads)
@@ -184,54 +189,53 @@ namespace KicadAutoPlacement
         }
 
         /// <summary>
-        /// Рекурсивный метод, приводит плату к корректному виду без пересечений модулей
+        /// Приводит плату к корректному виду без пересечений модулей
         /// </summary>
-        /// <param name="notVisited"> Список модулей которые нужно проверить на пересечение</param>
+        /// <param name="modules"> Список модулей которые нужно проверить на пересечение</param>
         public void LeadToCorrectForm(List<Module> modules)
         {
+            int swapCount = 0;
             var notVisited = modules.ToList();
             foreach (var e in notVisited)
             {
                 if (!Modules.Contains(e))
                     throw new Exception("Invalid arguments for lead to correct form");
             }
-
+            var rnd = new Random();
             while (true)
             {
                 if (notVisited.Count == 0)
                     break;
                 var curModule = notVisited[notVisited.Count - 1];
                 notVisited.Remove(curModule);
+                
                 foreach (var module in Modules)
                 {
                     if (curModule.Equals(module))
                         continue;
+
                     if (AreModulesIntersect(curModule, module))
                     {
-                        DivideModules(curModule,module);
+                        swapCount++;
+                        if (module.IsLocked())
+                            DivideModules(module,curModule);
+                        else 
+                            DivideModules(curModule,module);
                         if (!notVisited.Contains(module))
                             notVisited.Add(module);
+                        if (!GeometricSolver.AreModuleInBounds(module.LeftUpperBound + module.Position,
+                            module.RighLowerBound + module.Position,
+                            Chromosome.LeftUpperPoint,
+                            new Point(Chromosome.LeftUpperPoint.X + Chromosome.WorkspaceWidth,
+                                Chromosome.LeftUpperPoint.Y + Chromosome.WorkspaceHeight)))
+                        {
+                            module.Position = GeometricSolver.GetRandomPointInRange(Chromosome.WorkspaceWidth, Chromosome.WorkspaceHeight, rnd) + Chromosome.LeftUpperPoint;
+                        }
                     }
                 }
+                if (swapCount > 500)
+                    break;
             }
-            //List<Module> newModulesForCheck = new List<Module>();
-            //foreach (var curModule in notVisited)
-            //{
-            //    foreach (var mod in Modules)
-            //    {
-            //        if (mod.Position == curModule.Position && mod.Name == curModule.Name && mod.Path == curModule.Path)
-            //        {
-            //            continue;
-            //        }
-            //        if (AreModulesIntersect(curModule, mod))
-            //        {
-            //            newModulesForCheck.Add(mod);
-            //            DivideModules(curModule, mod);
-            //        }
-            //    }
-            //}
-            //if (newModulesForCheck.Count!=0)
-            //    LeadToCorrectForm(newModulesForCheck);
         }
 
         /// <summary>
@@ -286,19 +290,22 @@ namespace KicadAutoPlacement
                 minDistance = -leftUpperPointM2.Y + rightLowerPointM1.Y;
                 direction = Direction.Bottom;
             }
+            var curDistance = minDistance;
+            //if (m1.IsLocked())
+            //    curDistance *= 2;
             switch (direction)
             {
                 case Direction.Left:
-                    m2.Position.X -= minDistance + DistanceBetweenModules;
+                    m2.Position -= new Point(curDistance + DistanceBetweenModules,0);
                     break;
                 case Direction.Right:
-                    m2.Position.X += minDistance + DistanceBetweenModules;
+                    m2.Position += new Point(curDistance + DistanceBetweenModules, 0);
                     break;
                 case Direction.Bottom:
-                    m2.Position.Y += minDistance + DistanceBetweenModules;
+                    m2.Position += new Point(0, curDistance + DistanceBetweenModules);
                     break;
                 case Direction.Top:
-                    m2.Position.Y -= minDistance + DistanceBetweenModules;
+                    m2.Position -= new Point(0, curDistance + DistanceBetweenModules);
                     break;
             }
         }

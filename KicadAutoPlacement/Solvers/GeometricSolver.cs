@@ -8,10 +8,9 @@ namespace KicadAutoPlacement.Solvers
 {
     public static class GeometricSolver
     {
-        public static Point GetRandomPointInRange(double width, double height)
+        public static Point GetRandomPointInRange(double width, double height, Random rnd)
         {
-            var rnd = new Random();
-            return new Point(rnd.NextDouble()*width, rnd.NextDouble()*height);
+            return new Point(rnd.Next(0,(int)width), rnd.Next(0,(int)height));
         }
 
         /// <summary>
@@ -70,6 +69,15 @@ namespace KicadAutoPlacement.Solvers
         public static Point GetMax(Point point, double X, double Y)
         {
             return new Point((X > point.X) ? X : point.X, (Y > point.Y) ? Y : point.Y);
+        }
+
+        public static bool AreModuleInBounds(Point m1, Point m2, Point bound1, Point bound2)
+        {
+            return m1 < bound2 && m1 > bound1 && m2 < bound2 && m2 > bound1;
+            //return ((leftUpperPointM1.X <= leftUpperPointM2.X && leftUpperPointM2.X <= rightLowerPointM1.X ||
+            //         leftUpperPointM2.X <= leftUpperPointM1.X && leftUpperPointM1.X <= rightLowerPointM2.X) &&
+            //        (leftUpperPointM1.Y <= leftUpperPointM2.Y && leftUpperPointM2.Y <= rightLowerPointM1.Y ||
+            //         leftUpperPointM2.Y <= leftUpperPointM1.Y && leftUpperPointM1.Y <= rightLowerPointM2.Y));
         }
     }
 }

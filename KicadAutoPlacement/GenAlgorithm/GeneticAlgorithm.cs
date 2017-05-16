@@ -25,7 +25,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         public static int SelectionCount = 80;
 
         public int IterationCount { get; set; }
-        private List<Chromosome> Pool;
+        public List<Chromosome> Pool;
         private List<Chromosome> Buffer;
         public GeneticAlgorithm()
         {
@@ -97,7 +97,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         {
             for (int i = 0; i < PoolSize; i++)
             {
-                Pool.AddRange( Pool[i].Mutate());
+                Pool.AddRange(Pool[i].Mutate());
             }
         }
 

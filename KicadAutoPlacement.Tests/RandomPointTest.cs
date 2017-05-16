@@ -10,9 +10,10 @@ namespace KicadAutoPlacement.Tests
         [TestMethod]
         public void RandomPointInRange()
         {
+            var rnd = new Random();
             for (int i = 0; i < 10; i++)
             {
-                Point p1 = GeometricSolver.GetRandomPointInRange(400,400);
+                Point p1 = GeometricSolver.GetRandomPointInRange(400,400, rnd);
                 Assert.IsTrue(p1.X<400 && p1.X > 0);
                 Assert.IsTrue(p1.Y < 400 && p1.Y > 0);
             }

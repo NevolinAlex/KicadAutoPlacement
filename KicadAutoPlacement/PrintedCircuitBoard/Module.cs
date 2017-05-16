@@ -12,7 +12,19 @@ namespace KicadAutoPlacement
         public List<Pad> Pads;
         public Point LeftUpperBound { get; set; }//
         public Point RighLowerBound { get; set; }//
-        public Point Position { get; set; }//
+        private Point _position;
+        public Point Position
+        {
+            get { return _position; }
+            set {
+                if (!_lockedY)
+                    _position.Y = value.Y;
+                if (!_lockedX)
+                    _position.X = value.X;
+            }
+        } 
+        private bool _lockedX;
+        private bool _lockedY;
         private double _rotate;
         public double Rotate
         {
@@ -24,11 +36,49 @@ namespace KicadAutoPlacement
         public Module(string name)
         {
             Name = name;
-            Position = new Point(0, 0);
+            _position = new Point(0, 0);
             Rotate = 0;
             LeftUpperBound = new Point(0,0);
             RighLowerBound = new Point(0,0);
             Pads = new List<Pad>();
+        }
+
+        public void LockXCoordinate()
+        {
+            if (!_lockedX)
+            {
+                //Position.X = X;
+                _lockedX = true;
+            }
+        }
+
+        public void LockYCoordinate()
+        {
+            if (!_lockedY)
+            {
+                //Position.Y = Y;
+                _lockedY = true;
+            }
+        }
+
+        public bool IsLocked()
+        {
+            return _lockedY || _lockedX;
+        }
+
+        public bool IsLockedX()
+        {
+            return _lockedX;
+        }
+
+        public void Lock()
+        {
+            _lockedY = true;
+            _lockedX = true;
+        }
+        public bool IsLockedY()
+        {
+            return _lockedY;
         }
         public override string ToString()
         {

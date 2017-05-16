@@ -26,19 +26,27 @@ namespace KicadAutoPlacement
             //Console.WriteLine(pcb.GetIntersectionsNumber()); 
 
             Chromosome.LeftUpperPoint = new Point(20, 20);// левый верхний угол рабочего пространства
-            Chromosome.WorkspaceHeight = 120; // высота рабочего пространства в котором генерируются новые особи
-            Chromosome.WorkspaceWidth = 120;//ширина рабочего пространства в котором генерируются новые особи
+            Chromosome.WorkspaceHeight = 60; // высота рабочего пространства в котором генерируются новые особи
+            Chromosome.WorkspaceWidth = 80;//ширина рабочего пространства в котором генерируются новые особи
             GeneticAlgorithm.PoolSize = 100; // размер пула
-            GeneticAlgorithm.MaxChromosomeAge = 100; // максимальный возраст хромосомы
+            GeneticAlgorithm.MaxChromosomeAge = 2; // максимальный возраст хромосомы
             GeneticAlgorithm.SelectionCount = 80; //число хромосом переживающих селекцию
+
+            //pcb.Modules[16].Lock(); // фиксируем элемент u2 в центре
+            pcb.Modules[16].LockXCoordinate(); //фиксируем по X
+            //pcb.Modules[16].LockYCoordinate(); // фиксируем по Y
+
+
+
             Chromosome.ExamplePrintedCircuitBoard = pcb; // пример платы по которой будут генерироваться новые особи
+
             GeneticAlgorithm genAlgorithm = new GeneticAlgorithm();
             genAlgorithm.Start();
 
 
             Chromosome bestChromosome = genAlgorithm.GetBestChromosome();
             parser.UpdateTreeFromPcb(bestChromosome.PrintCircuitBoard);
-            parser.WriteFile("out.kicad_pcb", parser.Tree.Head);
+            parser.WriteFile("out3.kicad_pcb", parser.Tree.Head);
 
 
         }
