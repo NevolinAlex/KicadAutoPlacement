@@ -39,14 +39,23 @@ namespace KicadAutoPlacement
                 module.RighLowerBound = new Point(curModule.RighLowerBound);
                 foreach (var curPad in curModule.Pads)
                 {
+
                     Pad pad = new Pad();
                     pad.Number = curPad.Number;
                     pad.Position = new Point(curPad.Position.X, curPad.Position.Y);
+                    if (curPad.Net == null)
+                        continue;
                     Net net = null;
-                    foreach (var edge in NetList)
+                    try
                     {
-                        if (edge.Number == curPad.Net.Number && edge.Name == curPad.Net.Name)
-                            net = edge;
+                        foreach (var edge in NetList)
+                        {
+                            if (edge.Number == curPad.Net.Number && edge.Name == curPad.Net.Name)
+                                net = edge;
+                        }
+                    }
+                    catch (NullReferenceException e)
+                    {
                     }
                     if (net == null)
                     {

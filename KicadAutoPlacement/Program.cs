@@ -12,6 +12,10 @@ namespace KicadAutoPlacement
         [STAThread]
         static void Main(string[] args)
         {
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.BackgroundColor = ConsoleColor.White;
+
+            Console.Clear();
             OpenFileDialog dialog = new OpenFileDialog();
             string fileName = "";
             dialog.Filter = "PCB files |*.kicad_pcb;";
@@ -26,27 +30,27 @@ namespace KicadAutoPlacement
             //Console.WriteLine(pcb.GetIntersectionsNumber()); 
 
             Chromosome.LeftUpperPoint = new Point(20, 20);// левый верхний угол рабочего пространства
-            Chromosome.WorkspaceHeight = 60; // высота рабочего пространства в котором генерируются новые особи
-            Chromosome.WorkspaceWidth = 80;//ширина рабочего пространства в котором генерируются новые особи
+            Chromosome.WorkspaceHeight = 55; // высота рабочего пространства в котором генерируются новые особи
+            Chromosome.WorkspaceWidth = 55;//ширина рабочего пространства в котором генерируются новые особи
             GeneticAlgorithm.PoolSize = 100; // размер пула
-            GeneticAlgorithm.MaxChromosomeAge = 2; // максимальный возраст хромосомы
-            GeneticAlgorithm.SelectionCount = 80; //число хромосом переживающих селекцию
+            GeneticAlgorithm.MaxChromosomeAge = 5; // максимальный возраст хромосомы
+            GeneticAlgorithm.SelectionCount = 100; //число хромосом переживающих селекцию
 
             //pcb.Modules[16].Lock(); // фиксируем элемент u2 в центре
-            pcb.Modules[16].LockXCoordinate(); //фиксируем по X
+            //pcb.Modules[16].LockXCoordinate(); //фиксируем по X
             //pcb.Modules[16].LockYCoordinate(); // фиксируем по Y
-
+            Console.WriteLine(pcb.GetIntersectionsNumber());
 
 
             Chromosome.ExamplePrintedCircuitBoard = pcb; // пример платы по которой будут генерироваться новые особи
-
+           
             GeneticAlgorithm genAlgorithm = new GeneticAlgorithm();
             genAlgorithm.Start();
 
 
             Chromosome bestChromosome = genAlgorithm.GetBestChromosome();
             parser.UpdateTreeFromPcb(bestChromosome.PrintCircuitBoard);
-            parser.WriteFile("out3.kicad_pcb", parser.Tree.Head);
+            parser.WriteFile("out1.kicad_pcb", parser.Tree.Head);
 
 
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,8 +23,7 @@ namespace KicadAutoPlacement.GenAlgorithm
         /// <summary>
         /// Число лучших хромосом выживающих после селекции
         /// </summary>
-        public static int SelectionCount = 80;
-
+        public static int SelectionCount = 100;
         public int IterationCount { get; set; }
         public List<Chromosome> Pool;
         private List<Chromosome> Buffer;
@@ -129,7 +129,7 @@ namespace KicadAutoPlacement.GenAlgorithm
             }
             if (bestPoolChromosome.Valuation < bestBufferValuation)
             {
-                Console.WriteLine(String.Format("Itertion: {0} \n Number of intersection: {1}\n Elapsed Time: {2}",IterationCount, bestPoolChromosome.Valuation, stopWatch.ElapsedMilliseconds/1000));
+                Console.WriteLine(String.Format("Itertion: {0} \n Number of intersections: {1}\n Elapsed Time: {2} seconds",IterationCount, bestPoolChromosome.Valuation, stopWatch.ElapsedMilliseconds/1000));
                 Buffer[0] = new Chromosome(bestPoolChromosome);
             }
 
